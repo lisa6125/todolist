@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/fontawesome.min.css' />
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css' />
+    <link rel="stylesheet" href="./reset.css">
+
+    <style>
+        body {
+            background-color: rgb(246, 234, 208);
+            width: 100%;
+            text-align: center;
+        }
+
+        #app {
+            width: 80%;
+            margin: 50px auto;
+            border: 5px solid rgb(255, 184, 30);
+            border-radius: 20px;
+            position: relative;
+            padding: 20px;
+        }
+
+        #app::after {
+            position: absolute;
+            content: '';
+            width: 100%;
+            height: 30px;
+            background-color: rgb(255, 184, 30);
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            bottom: 0;
+            left: 0;
+        }
+
+        #top {
+            margin: 10px auto;
+            padding: 10px;
+            width: 70%;
+            border-bottom: 5px dotted rgb(255, 184, 30);
+        }
+
+        #top input:first-child {
+            height: 40px;
+            width: 70%;
+            border-radius: 5px;
+            margin-right: 30px;
+            font-size: 24px;
+        }
+
+        #btn {
+            height: 40px;
+            width: 100px;
+            border-radius: 10px;
+            border-color: #fff;
+            background-color: sandybrown;
+            color: #fff;
+        }
+
+        #btn:hover {
+            background-color: rgb(255, 168, 37);
+        }
+
+        ul {
+            margin: 50px;
+            padding: 0;
+        }
+
+        li {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            background-color: aqua;
+            margin: 20px;
+            line-height: 36px;
+            font-size: 24px;
+            background-color: rgb(255, 184, 30);
+            color: #fff;
+            padding: 10px 20px;
+        }
+
+        #chose input {
+            margin: 10px;
+            width: 150px;
+            height: 40px;
+            box-sizing: border-box;
+            color: #adadad;
+        }
+
+        #chose input:hover {
+            border: 2px solid rgb(255, 168, 37);
+            background: rgb(255, 168, 37);
+            color: rgb(255, 255, 255);
+            transition: 0.2s ease-in;
+        }
+
+        i {
+            color: rgb(255, 255, 255);
+            font-size: 2rem;
+            margin-right: 20px;
+        }
+
+        .fa-trash-alt:hover {
+            color: red;
+        }
+
+        span {
+            margin-right: 100px;
+        }
+
+        .icon {
+            color: rgb(21, 255, 0);
+        }
+
+        #todolist input {
+            margin-right: 50px;
+        }
+
+        .fa-redo-alt {
+            font-size: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin-top: 20px;
+        }
+
+        #time {
+            margin: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div id="top">
+            <input type="text" placeholder="輸入代辦事項" v-model='newitem' :style="{outline:inputborder}"
+                @keydown.enter='add'>
+            <input type="button" value="新增" id="btn" @click='add'>
+        </div>
+        <div id="chose">
+            <input type="button" value="刪除全部" @click='delAll("全部")'>
+            <input type="button" value="刪除已完成" @click='delAll("已完成")'>
+            <input type="button" value="刪除未完成" @click='delAll("未完成")'>
+            <br>
+            <input type="button" value="顯示全部" @click="show='全部'">
+            <input type="button" value="顯示已完成" @click="show='已完成'">
+            <input type="button" value="顯示未完成" @click="show='未完成'">
+            <br>
+            <input type="button" value="全部標記已完成" @click='complete(true)'>
+            <input type="button" value="全部標記未完成" @click='complete(false)'>
+        </div>
+        <div id="list">
+            <h3>目前顯示{{show}},共{{filtered.length}}個</h3>
+            <ul>
+                <li v-for='item in filtered' :key='item.id'>
+                    <i class="fas fa-check-circle" @click='checked(item)' :class='{icon:item.done}'></i>
+                    <div id="todolist" v-if='item.edit'>
+                        <input type="text" v-model='item.model' @keydown.enter='save(item)' @keydown.esc='redo(item)'>
+                        <i class="far fa-save" @click='save(item)'></i>
+                        <i class="fas fa-redo-alt" @click='redo(item)'></i>
+                    </div>
+                    <div id="todolist" v-else='item.edit'>
+                        <span>{{item.text}}</span>
+                        <i class="fas fa-pen" @click='edit(item)'></i>
+                        <i class="fas fa-trash-alt" @click='del(item)'></i>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div id="time"></div>
+    </div>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.8/vue.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.js'></script>
+    <script>
+        setInterval(insertime => {
+            const time = moment().format('MMMM Do YYYY, h:mm:ss a');
+            let showtime = document.getElementById('time')
+            showtime.innerHTML = ''
+            showtime.append(time)
+        }, 1000)
+
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    newitem: '',
+                    items: [],
+                    show: '全部',
+                    id: 0
+                }
+            },
+            computed: {
+                inputborder() {
+                    return this.newitem.length === 0 ? '2px solid #fff' : this.newitem.length < 3 ? '2px solid red' : '2px solid rgb(255, 168, 37)'
+                },
+                filtered() {
+                    return this.items.filter((item) => {
+                        if (this.show === '全部') {
+                            return true
+                        } else if (this.show === '已完成' && item.done) {
+                            return true
+                        } else if (this.show === '未完成' && !item.done) {
+                            return true
+                        } else {
+                            return false
+                        }
+                    })
+                }
+            },
+            methods: {
+                add() {
+                    if (this.newitem.length > 2) {
+                        this.items.push({
+                            text: this.newitem,
+                            done: false,
+                            edit: false,
+                            model: this.newitem,
+                            id: this.id
+                        })
+                        this.newitem = ''
+                        this.id++
+                    }
+                },
+                del(item) {
+                    let index = this.items.indexOf(item)
+                    this.items.splice(index, 1)
+                },
+                checked(item) {
+                    item.done = !item.done
+                },
+                edit(item) {
+                    item.edit = true
+                },
+                save(item) {
+                    if (item.model.length > 2) {
+                        item.text = item.model
+                        item.edit = false
+                    } else {
+                        item.model = item.text
+                        item.edit = false
+                    }
+                },
+                redo(item) {
+                    item.model = item.text
+                    item.edit = false
+                },
+                complete(value) {
+                    this.items.forEach(item => {
+                        item.done = value
+                    });
+                },
+                delAll(mode) {
+                    this.items = this.items.filter((item) => {
+                        if (mode === '全部') {
+                            return false
+                        }
+                        else if (mode === '已完成' && item.done) {
+                            return false
+                        }
+                        else if (mode === '未完成' && !item.done) {
+                            return false
+                        }
+                        else {
+                            return true
+                        }
+                    })
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
